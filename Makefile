@@ -23,7 +23,7 @@ default:
 
 # Make sure that minilzo.h, lzoconf.h and lzodefs.h are in the
 # current dircectory. Otherwise you may want to adjust CPPFLAGS.
-CPPFLAGS = -I. -I../include/lzo
+CPPFLAGS = -I. -I./include/
 
 GCC_CFLAGS = -s -Wall -O2 -fomit-frame-pointer
 
