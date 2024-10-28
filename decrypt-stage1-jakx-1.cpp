@@ -3,11 +3,6 @@
 #include <vector>
 #include "minilzo.h"
 
-#define HEAP_ALLOC(var,size) \
-    lzo_align_t __LZO_MMODEL var [ ((size) + (sizeof(lzo_align_t) - 1)) / sizeof(lzo_align_t) ]
-
-static HEAP_ALLOC(wrkmem, LZO1X_1_MEM_COMPRESS);
-
 int main() {
     // Initialize LZO
     if (lzo_init() != LZO_E_OK) {
@@ -27,8 +22,9 @@ int main() {
     input.close();
 
     // Extract the compressed portion
-    const size_t compressed_offset = 0x16bbc4 - 0x100000;
-    const size_t compressed_size = 0x89002;
+    const size_t compressed_offset = 0x166ab4 - 0x100000;
+    const size_t compressed_size = 0x88f9f;
+    const size_t expected_decompressed_size = 0x170CA4;
     
     if (elf_data.size() < compressed_offset + compressed_size) {
         std::cerr << "ELF file is smaller than expected" << std::endl;
@@ -45,12 +41,12 @@ int main() {
                                                elf_data.begin() + compressed_offset + compressed_size);
 
     // Prepare buffer for decompressed data
-    std::vector<unsigned char> decompressed_data(0x800000); // As per the decompiled code
-    lzo_uint decompressed_size = decompressed_data.size();
+    std::vector<unsigned char> decompressed_data(expected_decompressed_size); // As per the decompiled code
+    lzo_uint decompressed_size = 0;
 
     // Decompress
     int r = lzo1x_decompress(compressed_data.data(), compressed_data.size(),
-                             decompressed_data.data(), &decompressed_size, wrkmem);
+                             decompressed_data.data(), &decompressed_size, nullptr);
 
     if (r != LZO_E_OK) {
         std::cerr << "Decompression failed" << std::endl;
@@ -67,17 +63,8 @@ int main() {
         return 1;
     }
 
-    // Write the uncompressed part of the ELF
-    output.write(reinterpret_cast<const char*>(elf_data.data()), compressed_offset);
-
     // Write the decompressed part
     output.write(reinterpret_cast<const char*>(decompressed_data.data()), decompressed_size);
-
-    // Write the remaining part of the original ELF, if any
-    if (elf_data.size() > compressed_offset + compressed_size) {
-        output.write(reinterpret_cast<const char*>(elf_data.data() + compressed_offset + compressed_size),
-                     elf_data.size() - (compressed_offset + compressed_size));
-    }
 
     output.close();
 
