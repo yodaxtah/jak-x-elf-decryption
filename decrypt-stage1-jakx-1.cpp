@@ -22,9 +22,18 @@ int main() {
     input.close();
 
     // Extract the compressed portion
-    const size_t compressed_offset = 0x166ab4 - 0x100000;
-    const size_t compressed_size = 0x88f9f;
-    const size_t expected_decompressed_size = 0x170CA4;
+    // if ntsc
+    // const size_t compressed_offset = 0x166ab4 - 0x100000;
+    // const size_t compressed_size = 0x88f9f;
+    // elif pal
+    const size_t compressed_offset = 0x16bbc4 - 0x100000;
+    const size_t compressed_size = 0x89002;
+
+    // size found in previous execution using a too large buffer
+    // if ntsc
+    // const size_t expected_decompressed_size = 0x170CA4;
+    // elif pal
+    const size_t expected_decompressed_size = 0x170DA4; // idk
     
     if (elf_data.size() < compressed_offset + compressed_size) {
         std::cerr << "ELF file is smaller than expected" << std::endl;
@@ -41,7 +50,7 @@ int main() {
                                                elf_data.begin() + compressed_offset + compressed_size);
 
     // Prepare buffer for decompressed data
-    std::vector<unsigned char> decompressed_data(expected_decompressed_size); // As per the decompiled code
+    std::vector<unsigned char> decompressed_data(expected_decompressed_size);
     lzo_uint decompressed_size = 0;
 
     // Decompress
@@ -52,6 +61,10 @@ int main() {
         std::cerr << "Decompression failed" << std::endl;
         return 1;
     }
+    std::cout
+        << "expected elf size: " << expected_decompressed_size << std::endl
+        << "actual elf size: " << decompressed_size << std::endl
+        ;
 
     // Resize the decompressed data to its actual size
     decompressed_data.resize(decompressed_size);
